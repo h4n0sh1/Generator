@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -35,9 +34,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize random seed
-	rand.Seed(time.Now().UnixNano())
-
 	// Generate files
 	fmt.Printf("Generating %d files with random sizes between %d KB and %d KB...\n", numFiles, minSizeKB, maxSizeKB)
 
@@ -47,7 +43,7 @@ func main() {
 		if maxSizeKB == minSizeKB {
 			fileSizeKB = minSizeKB
 		} else {
-			fileSizeKB = minSizeKB + rand.Intn(maxSizeKB-minSizeKB+1)
+			fileSizeKB = minSizeKB + rand.IntN(maxSizeKB-minSizeKB+1)
 		}
 		fileSizeBytes := fileSizeKB * 1024
 
@@ -57,7 +53,7 @@ func main() {
 		// Generate random content
 		content := make([]byte, fileSizeBytes)
 		for j := 0; j < fileSizeBytes; j++ {
-			content[j] = charset[rand.Intn(len(charset))]
+			content[j] = charset[rand.IntN(len(charset))]
 		}
 
 		// Write file
