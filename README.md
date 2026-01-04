@@ -1,7 +1,7 @@
 # Generator
-A project to hold multiple populating engines
+A project to hold multiple populating "engines"
 
-# File Generator
+# File Generator : go-files
 
 A Go script that generates multiple files with random content and random sizes.
 
