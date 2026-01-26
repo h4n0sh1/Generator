@@ -280,7 +280,7 @@ func writeZipFile(zw *zip.Writer, name string, content string) error {
 	return err
 }
 
-// PngGenerator generates valid PNG image files
+// PngGenerator generates valid PNG image files with pixel art animals
 type PngGenerator struct{}
 
 func (g *PngGenerator) Extension() string {
@@ -288,32 +288,81 @@ func (g *PngGenerator) Extension() string {
 }
 
 func (g *PngGenerator) Generate(sizeBytes int) ([]byte, error) {
-	// Calculate approximate dimensions for target size
-	// PNG compression varies, so we'll generate and adjust
-	dim := 100
-	if sizeBytes > 10*1024 {
-		dim = 200
-	}
+	// Determine image size based on target file size
+	imgSize := 256
 	if sizeBytes > 50*1024 {
-		dim = 400
+		imgSize = 512
 	}
-	if sizeBytes > 100*1024 {
-		dim = 600
+	if sizeBytes > 200*1024 {
+		imgSize = 1024
 	}
 
-	// Create image with random colored pixels
-	img := image.NewRGBA(image.Rect(0, 0, dim, dim))
+	// Create image with a nice background
+	img := image.NewRGBA(image.Rect(0, 0, imgSize, imgSize))
 
-	for y := 0; y < dim; y++ {
-		for x := 0; x < dim; x++ {
-			// Generate random colors
-			c := color.RGBA{
-				R: uint8(rand.IntN(256)),
-				G: uint8(rand.IntN(256)),
-				B: uint8(rand.IntN(256)),
-				A: 255,
+	// Fill with a random pastel background
+	bgColor := randomPastelColor()
+	for y := 0; y < imgSize; y++ {
+		for x := 0; x < imgSize; x++ {
+			img.Set(x, y, bgColor)
+		}
+	}
+
+	// Get a random animal pattern
+	animal := GetRandomAnimal()
+
+	// Calculate pixel size to scale the animal to fit nicely
+	// Animal should take up about 60-80% of the image
+	patternWidth := len(animal.Pattern[0])
+	patternHeight := len(animal.Pattern)
+	pixelSize := (imgSize * 7 / 10) / max(patternWidth, patternHeight)
+	if pixelSize < 1 {
+		pixelSize = 1
+	}
+
+	// Center the animal
+	startX := (imgSize - patternWidth*pixelSize) / 2
+	startY := (imgSize - patternHeight*pixelSize) / 2
+
+	// Draw the animal
+	for py, row := range animal.Pattern {
+		for px, char := range row {
+			var c color.RGBA
+			switch char {
+			case '#':
+				c = animal.Primary
+			case 'o':
+				c = animal.Secondary
+			case '.':
+				c = animal.Accent
+			default:
+				continue // Skip transparent pixels
 			}
-			img.Set(x, y, c)
+
+			// Draw a pixelSize x pixelSize block
+			for dy := 0; dy < pixelSize; dy++ {
+				for dx := 0; dx < pixelSize; dx++ {
+					x := startX + px*pixelSize + dx
+					y := startY + py*pixelSize + dy
+					if x >= 0 && x < imgSize && y >= 0 && y < imgSize {
+						img.Set(x, y, c)
+					}
+				}
+			}
+		}
+	}
+
+	// Add a simple border/frame
+	frameColor := color.RGBA{50, 50, 50, 255}
+	frameWidth := max(2, imgSize/64)
+	for i := 0; i < frameWidth; i++ {
+		for x := 0; x < imgSize; x++ {
+			img.Set(x, i, frameColor)
+			img.Set(x, imgSize-1-i, frameColor)
+		}
+		for y := 0; y < imgSize; y++ {
+			img.Set(i, y, frameColor)
+			img.Set(imgSize-1-i, y, frameColor)
 		}
 	}
 
@@ -326,32 +375,8 @@ func (g *PngGenerator) Generate(sizeBytes int) ([]byte, error) {
 
 	result := buf.Bytes()
 
-	// If result is too small, create a larger image
-	if len(result) < sizeBytes/2 {
-		newDim := dim * 2
-		img = image.NewRGBA(image.Rect(0, 0, newDim, newDim))
-		for y := 0; y < newDim; y++ {
-			for x := 0; x < newDim; x++ {
-				c := color.RGBA{
-					R: uint8(rand.IntN(256)),
-					G: uint8(rand.IntN(256)),
-					B: uint8(rand.IntN(256)),
-					A: 255,
-				}
-				img.Set(x, y, c)
-			}
-		}
-		buf.Reset()
-		err = png.Encode(&buf, img)
-		if err != nil {
-			return nil, err
-		}
-		result = buf.Bytes()
-	}
-
-	// For PNG, we can add metadata chunks to pad size
+	// If result is smaller than target, add metadata padding
 	if len(result) < sizeBytes {
-		// Add tEXt chunk with padding
 		padSize := sizeBytes - len(result)
 		if padSize > 0 {
 			result = appendPngTextChunk(result, padSize)
@@ -359,6 +384,22 @@ func (g *PngGenerator) Generate(sizeBytes int) ([]byte, error) {
 	}
 
 	return result, nil
+}
+
+func randomPastelColor() color.RGBA {
+	pastels := []color.RGBA{
+		{255, 230, 230, 255}, // Light pink
+		{255, 240, 220, 255}, // Peach
+		{255, 255, 220, 255}, // Light yellow
+		{220, 255, 220, 255}, // Light green
+		{220, 240, 255, 255}, // Light blue
+		{240, 220, 255, 255}, // Light purple
+		{255, 220, 240, 255}, // Light magenta
+		{220, 255, 255, 255}, // Light cyan
+		{245, 245, 220, 255}, // Beige
+		{230, 230, 250, 255}, // Lavender
+	}
+	return pastels[rand.IntN(len(pastels))]
 }
 
 func appendPngTextChunk(pngData []byte, padSize int) []byte {
