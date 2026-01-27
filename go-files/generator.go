@@ -92,11 +92,11 @@ func main() {
 	// Check command line arguments
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: generator <number_of_files> <max_size_kb> [extensions]")
-		fmt.Println("  number_of_files: Number of files to generate per extension")
+		fmt.Println("  number_of_files: Total number of files to generate")
 		fmt.Println("  max_size_kb: Maximum size of each file in KB (minimum is 1KB)")
 		fmt.Println("  extensions: Comma-separated list of extensions (optional)")
 		fmt.Printf("  Supported extensions: %s\n", strings.Join(SupportedExtensions(), ", "))
-		fmt.Println("\nExample: generator 10 100 txt,csv,json")
+		fmt.Println("\nExample: generator 100 100 txt,csv,json")
 		os.Exit(1)
 	}
 
@@ -122,44 +122,42 @@ func main() {
 		}
 	}
 
-	// Generate files
-	totalFiles := numFiles * len(extensions)
-	fmt.Printf("Generating %d files (%d per extension) with random sizes between %d KB and %d KB...\n",
-		totalFiles, numFiles, minSizeKB, maxSizeKB)
+	// Generate files with random extensions
+	fmt.Printf("Generating %d files with random sizes between %d KB and %d KB...\n",
+		numFiles, minSizeKB, maxSizeKB)
 
-	for _, ext := range extensions {
+	for i := 1; i <= numFiles; i++ {
+		// Pick a random extension
+		ext := extensions[rand.IntN(len(extensions))]
 		generator := NewGenerator(ext)
-		fmt.Printf("\nGenerating %s files...\n", ext)
 
-		for i := 1; i <= numFiles; i++ {
-			// Generate random size between minSizeKB and maxSizeKB
-			var fileSizeKB int
-			if maxSizeKB == minSizeKB {
-				fileSizeKB = minSizeKB
-			} else {
-				fileSizeKB = minSizeKB + rand.IntN(maxSizeKB-minSizeKB+1)
-			}
-			fileSizeBytes := fileSizeKB * 1024
-
-			// Create filename
-			filename := fmt.Sprintf("file_%d.%s", i, generator.Extension())
-
-			// Generate content using the appropriate generator
-			content, err := generator.Generate(fileSizeBytes)
-			if err != nil {
-				fmt.Printf("Error generating content for %s: %v\n", filename, err)
-				continue
-			}
-
-			// Write file
-			err = os.WriteFile(filename, content, 0644)
-			if err != nil {
-				fmt.Printf("Error creating file %s: %v\n", filename, err)
-				continue
-			}
-
-			fmt.Printf("Created %s (size: %d KB)\n", filename, len(content)/1024)
+		// Generate random size between minSizeKB and maxSizeKB
+		var fileSizeKB int
+		if maxSizeKB == minSizeKB {
+			fileSizeKB = minSizeKB
+		} else {
+			fileSizeKB = minSizeKB + rand.IntN(maxSizeKB-minSizeKB+1)
 		}
+		fileSizeBytes := fileSizeKB * 1024
+
+		// Create filename
+		filename := fmt.Sprintf("file_%d.%s", i, generator.Extension())
+
+		// Generate content using the appropriate generator
+		content, err := generator.Generate(fileSizeBytes)
+		if err != nil {
+			fmt.Printf("Error generating content for %s: %v\n", filename, err)
+			continue
+		}
+
+		// Write file
+		err = os.WriteFile(filename, content, 0644)
+		if err != nil {
+			fmt.Printf("Error creating file %s: %v\n", filename, err)
+			continue
+		}
+
+		fmt.Printf("Created %s (size: %d KB)\n", filename, len(content)/1024)
 	}
 
 	fmt.Println("\nFile generation completed!")

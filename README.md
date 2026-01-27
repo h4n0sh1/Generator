@@ -16,7 +16,7 @@ generator <number_of_files> <max_size_kb> [extensions]
 
 ### Parameters
 
-- `number_of_files`: Files to generate per extension
+- `number_of_files`: Total number of files to generate
 - `max_size_kb`: Maximum file size in KB (min: 1KB)
 - `extensions`: Comma-separated list (optional, defaults to all)
 
@@ -29,14 +29,14 @@ generator <number_of_files> <max_size_kb> [extensions]
 ## Examples
 
 ```bash
-# Generate 5 files of each type, up to 100KB each
-generator 5 100
+# Generate 100 files with random extensions, up to 100KB each
+generator 100 100
 
-# Generate only specific formats
-generator 10 50 txt,csv,json
+# Generate 50 files, only txt/csv/json formats
+generator 50 50 txt,csv,json
 
-# Generate documents and images
-generator 3 20 pdf,docx,png
+# Generate 20 document/image files
+generator 20 200 pdf,docx,png
 ```
 
 ## Build
